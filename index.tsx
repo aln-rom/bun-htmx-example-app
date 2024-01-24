@@ -1,4 +1,5 @@
 import {renderToString} from "react-dom/server";
+
 const server = Bun.serve({
     port: 8080,
     hostname: "localhost",
