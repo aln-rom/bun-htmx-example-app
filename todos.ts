@@ -29,4 +29,9 @@ export class Todos {
     `)
         todosAddQuery.run();
     }
+
+    list(): Todo[] {
+        const todosQuery = this.db.query('SELECT * FROM todos')
+        return todosQuery.all() as unknown[] as Todo[]
+    }
 }
