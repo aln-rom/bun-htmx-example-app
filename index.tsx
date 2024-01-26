@@ -1,15 +1,18 @@
-import {renderToString} from "react-dom/server";
+import { renderToString } from "react-dom/server";
+import { Database } from "bun:sqlite";
+import { Todos, type Todo } from "./todos";
+
+const todosController = new Todos(
+    new Database()
+)
+
+todosController.createTable();
 
 const server = Bun.serve({
     port: 8080,
     hostname: "localhost",
     fetch: handler
 });
-
-type Todo = {id: number, text: string};
-const todos: Todo[] = [];
-
-console.log(`Server is listening on http://${server.hostname}:${server.port}`)
 
 async function handler(request: Request): Promise<Response> {
     const url = new URL(request.url);
@@ -21,20 +24,32 @@ async function handler(request: Request): Promise<Response> {
         const { todo } = await request.json();
 
         if (!todo?.length) return new Response('Invalid input', { status: 500 })
-        todos.push({
-            id: todos.length + 1,
-            text: todo,
-        })
 
-        return new Response(renderToString(<TodoList todos={todos} />))
+        todosController.add(todo);
+        const todos = todosController.list();
+
+        return new Response(
+            renderToString(<TodoList todos={todos} />)
+        );
     }
 
-    if (url.pathname === '/todos' && request.method === 'GET') {
-        return new Response(renderToString(<TodoList todos={[]} />))
+    if (request.method === "GET" && url.pathname === "/todos") {
+        const todos = todosController.list()
+
+
+        return new Response(
+            renderToString(<TodoList todos={todos} />)
+        );
     }
 
-    return new Response('Not found', { status: 404 })
+    return new Response("NotFound", { status: 404 });
 }
+
+Bun.write(
+    Bun.stdout,
+    `Server is listening on http://${server.hostname}:${server.port}\n\n`
+)
+
 
 function TodoList(props: { todos: Todo[] }) {
     return <ul>
